@@ -109,7 +109,7 @@ def ratio_active_compound(pred, color=None, label=None, **kwargs):
         np.arange(median.shape[0]), q25, q75, alpha=.1, color=color)
 
 
-def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, skip=False, ax=None, legend=True, leg_lw=3, **kwargs):
+def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, legend_dict, skip=False, ax=None, legend=True, leg_lw=3, **kwargs):
     if ax is not None:
         plt.sca(ax)
 

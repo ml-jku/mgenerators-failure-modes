@@ -114,16 +114,16 @@ def optimize(chid,
     def timestamp():
         return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
 
-    results_dir = f'./results/graph_ga/{chid}_{timestamp()}'
+    results_dir = os.path.join('./results', 'graph_ga', chid, timestamp())
     if not os.path.isdir(results_dir):
         os.makedirs(results_dir)
     print(f'Optimization time {opt_time:.2f}')
     print(f'Statistics time {stat_time:.2f}')
     print(f'Storing results in {results_dir}')
-    results_file = os.path.join(results_dir, 'results.p')
+    results_file = os.path.join(results_dir, 'results.json')
 
-    with open(results_file, 'wb') as f:
-        pickle.dump(results, f)
+    with open(results_file, 'w') as f:
+        json.dump(results, f)
 
     config_file = os.path.join(results_dir, 'config.json')
     with open(config_file, 'w') as f:
@@ -146,7 +146,7 @@ if __name__ == '__main__':
                             mutation_rate=0.01,
                             n_jobs=-1,
                             random_start=True,
-                            patience=5,
+                            patience=150,
                             canonicalize=False))
 
     optimize(**config)

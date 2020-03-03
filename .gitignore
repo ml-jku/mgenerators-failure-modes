@@ -4,9 +4,11 @@
 .vscode/
 data/
 results/
+old_stuff/
+assays/
 
 
-
+*.swp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

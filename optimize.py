@@ -5,7 +5,6 @@ from multiprocessing import Pool
 from pathlib import Path
 from time import gmtime, strftime, time
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from rdkit import Chem
@@ -13,8 +12,7 @@ from rdkit.Chem import AllChem
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
-from guacamol_baselines.graph_ga.goal_directed_generation import \
-    GB_GA_Generator
+from generators import GB_GA_Generator
 from utils import TPScoringFunction, calc_auc, ecfp, score
 
 def timestamp():

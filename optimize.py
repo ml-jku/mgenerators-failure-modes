@@ -17,21 +17,15 @@ from guacamol_baselines.graph_ga.goal_directed_generation import \
     GB_GA_Generator
 from utils import TPScoringFunction, calc_auc, ecfp, score
 
+def timestamp():
+    return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
 
-def optimize(chid,
-             n_estimators,
-             n_jobs,
-             external_file,
-             n_external,
-             seed,
-             optimizer_args):
-
-    config = locals()
-    np.random.seed(seed)
-
-    # create dictionary to store results in
-    results = {}
-
+def fit_clfs(chid, n_estimators, n_jobs):
+    """
+    Args:
+        chid: which assay to use:
+        external_file:
+    """
     # read data and calculate ecfp fingerprints
     assay_file = f'./assays/processed/{chid}.csv'
     print(f'Reading data from: {assay_file}')
@@ -39,15 +33,10 @@ def optimize(chid,
     X = np.array(ecfp(df.smiles))
     y = np.array(df.label)
 
-    # load external smiles for evaluation
-    with open(external_file) as f:
-        external_smiles = f.read().split()
-    external_smiles = np.random.choice(external_smiles, n_external)
-
     # split in equally sized sets. Stratify to get same label distributions
-    X1, X2, y1, y2 = train_test_split(
-        X, y, test_size=0.5, stratify=y)
-    results['balance'] = (np.mean(y1), np.mean(y2))
+    X1, X2, y1, y2 = train_test_split(X, y, test_size=0.5, stratify=y)
+
+    balance = (np.mean(y1), np.mean(y2))
 
     # train classifiers and store them in dictionary
     clfs = {}
@@ -63,33 +52,61 @@ def optimize(chid,
         n_estimators=n_estimators, n_jobs=n_jobs)
     clfs['Split2'].fit(X2, y2)
 
-    clfs['all'] = RandomForestClassifier(
-        n_estimators=n_estimators, n_jobs=n_jobs)
-    clfs['all'].fit(X, y)
-
     # calculate AUCs for the clfs
-    results['AUC'] = {}
-    results['AUC']['Split1'] = calc_auc(clfs['Split1'], X2, y2)
-    results['AUC']['Split1_alt'] = calc_auc(clfs['Split1_alt'], X2, y2)
-    results['AUC']['Split2'] = calc_auc(clfs['Split2'], X1, y1)
+    aucs = {}
+    aucs['Split1'] = calc_auc(clfs['Split1'], X2, y2)
+    aucs['Split1_alt'] = calc_auc(clfs['Split1_alt'], X2, y2)
+    aucs['Split2'] = calc_auc(clfs['Split2'], X1, y1)
     print("AUCs:")
-    for k, v in results['AUC'].items():
+    for k, v in aucs.items():
         print(f'{k}: {v}')
+
+    return clfs, aucs, balance
+
+
+def optimize(chid,
+             n_estimators,
+             n_jobs,
+             external_file,
+             n_external,
+             seed,
+             optimizer_args):
+
+    config = locals()
+    np.random.seed(seed)
+
+    #set up logging
+    results_dir = os.path.join('./results', 'graph_ga', chid, timestamp())
+    os.makedirs(results_dir)
+
+    config_file = os.path.join(results_dir, 'config.json')
+    with open(config_file, 'w') as f:
+        json.dump(config, f)
+
+
+
+    clfs, aucs, balance = fit_clfs(chid, n_estimators, n_jobs)
+    results = {}
+    results['AUC'] = aucs
+    results['balance'] = balance
+
+    clf_file = os.path.join(results_dir, 'classifiers.p')
+    with open(clf_file, 'wb') as f:
+        pickle.dump(clfs, f)
 
     # Create guacamol scoring function with clf trained on split 1
     scoring_function = TPScoringFunction(clfs['Split1'])
 
     # run optimization
-    opt_time = time()
+    t0 = time()
     optimizer = GB_GA_Generator(**optimizer_args)
     smiles_history = optimizer.generate_optimized_molecules(
         scoring_function, 100, get_history=True)
 
-    opt_time = time() - opt_time
+    t1 = time()
+    opt_time = t1 - t0
+
     # make a list of dictionaries for every time step
-
-    stat_time = time()
-
     statistics = []
     for optimized_smiles in smiles_history:
         row = {}
@@ -100,38 +117,28 @@ def optimize(chid,
         for k, clf in clfs.items():
             preds = score(optimized_smiles, clf)
             row['preds'][k] = preds
-            row['ratio_active'][k] = (np.array(preds) > 0.5).mean()
-            row['mean_pred'][k] = np.array(preds).mean()
         statistics.append(row)
 
-    stat_time = time() - stat_time
     results['statistics'] = statistics
 
+    stat_time = time() - t1
     # add predictions on external set
-    results['predictions_external'] = {
-        k: score(external_smiles, clf) for k, clf in clfs.items()}
+    # load external smiles for evaluation
+    with open(external_file) as f:
+        external_smiles = f.read().split()
+    external_smiles = np.random.choice(external_smiles, n_external)
+    results['predictions_external'] = {k: score(external_smiles, clf) for k, clf in clfs.items()}
 
-    def timestamp():
-        return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
-
-    results_dir = os.path.join('./results', 'graph_ga', chid, timestamp())
-    if not os.path.isdir(results_dir):
-        os.makedirs(results_dir)
-    print(f'Optimization time {opt_time:.2f}')
-    print(f'Statistics time {stat_time:.2f}')
-    print(f'Storing results in {results_dir}')
     results_file = os.path.join(results_dir, 'results.json')
-
     with open(results_file, 'w') as f:
         json.dump(results, f)
 
-    config_file = os.path.join(results_dir, 'config.json')
-    with open(config_file, 'w') as f:
-        json.dump(config, f)
+    print(f'Storing results in {results_dir}')
+    print(f'Optimization time {opt_time:.2f}')
+    print(f'Statistics time {stat_time:.2f}')
 
 
 if __name__ == '__main__':
-
     config = dict(
         chid='CHEMBL3888429',
         n_estimators=100,

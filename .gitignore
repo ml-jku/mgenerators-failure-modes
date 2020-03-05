@@ -6,7 +6,8 @@ data/
 results/
 old_stuff/
 assays/
-
+test/
+guacamol_baselines_modified
 
 *.swp
 

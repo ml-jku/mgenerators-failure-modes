@@ -1,3 +1,0 @@
-[submodule "guacamol_baselines"]
-	path = guacamol_baselines
-	url = https://github.com/BenevolentAI/guacamol_baselines

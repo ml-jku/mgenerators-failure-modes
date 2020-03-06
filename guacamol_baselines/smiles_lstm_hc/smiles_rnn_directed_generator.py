@@ -16,7 +16,7 @@ from .rnn_utils import load_rnn_model
 class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
     def __init__(self, pretrained_model_path: str, n_epochs=4, mols_to_sample=1028, keep_top=512,
                  optimize_n_epochs=2, max_len=100, optimize_batch_size=64, number_final_samples=1028,
-                 sample_final_model_only=False, random_start=False, smi_file=None, n_jobs=-1) -> None:
+                 sample_final_model_only=False, random_start=False, smi_file=None, n_jobs=-1, canonicalize=True) -> None:
         self.pretrained_model_path = pretrained_model_path
         self.n_epochs = n_epochs
         self.mols_to_sample = mols_to_sample
@@ -29,11 +29,15 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
         self.sample_final_model_only = sample_final_model_only
         self.random_start = random_start
         self.smi_file = smi_file
+        self.canonicalize = canonicalize
         self.pool = joblib.Parallel(n_jobs=n_jobs)
 
     def load_smiles_from_file(self, smi_file):
         with open(smi_file) as f:
-            return self.pool(delayed(canonicalize)(s.strip()) for s in f)
+            if self.canonicalize:
+                return self.pool(delayed(canonicalize)(s.strip()) for s in f)
+            else:
+                return f.read().split()
 
     def top_k(self, smiles, scoring_function, k):
         joblist = (delayed(scoring_function.score)(s) for s in smiles)
@@ -43,7 +47,7 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
         return [smile for score, smile in scored_smiles][:k]
 
     def generate_optimized_molecules(self, scoring_function: ScoringFunction, number_molecules: int,
-                                     starting_population: Optional[List[str]] = None) -> List[str]:
+                                     starting_population: Optional[List[str]] = None, get_history=False) -> List[str]:
 
         # fetch initial population?
         if starting_population is None:
@@ -64,7 +68,7 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
                                                max_len=self.max_len,
                                                device=device)
 
-        molecules = generator.optimise(objective=scoring_function,
+        molecules, smiles_history = generator.optimise(objective=scoring_function,
                                        start_population=starting_population,
                                        n_epochs=self.n_epochs,
                                        mols_to_sample=self.mols_to_sample,
@@ -88,4 +92,4 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
 
         top_scored_molecules = sorted_scored_molecules[:number_molecules]
 
-        return [x[0] for x in top_scored_molecules]
+        return [x[0] for x in top_scored_molecules], smiles_history

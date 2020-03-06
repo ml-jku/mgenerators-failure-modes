@@ -21,6 +21,8 @@ from rdkit.Chem.rdchem import Mol
 
 from . import crossover as co, mutate as mu
 
+def mols2smiles(mols):
+    return [Chem.MolToSmiles(m) for m in mols]
 
 def make_mating_pool(population_mol: List[Mol], population_scores, offspring_size: int):
     """
@@ -81,20 +83,24 @@ def sanitize(population_mol):
 
 class GB_GA_Generator(GoalDirectedGenerator):
 
-    def __init__(self, smi_file, population_size, offspring_size, generations, mutation_rate, n_jobs=-1, random_start=False, patience=5):
+    def __init__(self, smi_file, population_size, offspring_size, generations, mutation_rate, n_jobs=-1, random_start=False, patience=5, canonicalize=True):
         self.pool = joblib.Parallel(n_jobs=n_jobs)
         self.smi_file = smi_file
-        self.all_smiles = self.load_smiles_from_file(self.smi_file)
         self.population_size = population_size
         self.offspring_size = offspring_size
         self.generations = generations
         self.mutation_rate = mutation_rate
         self.random_start = random_start
         self.patience = patience
+        self.canonicalize = canonicalize
+        self.all_smiles = self.load_smiles_from_file(self.smi_file)
 
     def load_smiles_from_file(self, smi_file):
         with open(smi_file) as f:
-            return self.pool(delayed(canonicalize)(s.strip()) for s in f)
+            if self.canonicalize:
+                return self.pool(delayed(canonicalize)(s.strip()) for s in f)
+            else:
+                return f.read().split()
 
     def top_k(self, smiles, scoring_function, k):
         joblist = (delayed(scoring_function.score)(s) for s in smiles)
@@ -103,36 +109,55 @@ class GB_GA_Generator(GoalDirectedGenerator):
         scored_smiles = sorted(scored_smiles, key=lambda x: x[0], reverse=True)
         return [smile for score, smile in scored_smiles][:k]
 
-    def generate_optimized_molecules(self, scoring_function: ScoringFunction, number_molecules: int,
-                                     starting_population: Optional[List[str]] = None) -> List[str]:
+    def generate_optimized_molecules(self,
+                                     scoring_function: ScoringFunction, number_molecules: int,
+                                     starting_population: Optional[List[str]] = None,
+                                     get_history=False) -> List[str]:
 
         if number_molecules > self.population_size:
             self.population_size = number_molecules
-            print(f'Benchmark requested more molecules than expected: new population is {number_molecules}')
+            print(
+                f'Benchmark requested more molecules than expected: new population is {number_molecules}')
 
         # fetch initial population?
         if starting_population is None:
             print('selecting initial population...')
             if self.random_start:
-                starting_population = np.random.choice(self.all_smiles, self.population_size)
+                starting_population = np.random.choice(
+                    self.all_smiles, self.population_size)
             else:
-                starting_population = self.top_k(self.all_smiles, scoring_function, self.population_size)
+                starting_population = self.top_k(
+                    self.all_smiles, scoring_function, self.population_size)
 
         # select initial population
-        population_smiles = heapq.nlargest(self.population_size, starting_population, key=scoring_function.score)
+        # this is also slow
+        # population_smiles = heapq.nlargest(self.population_size, starting_population, key=scoring_function.score)
+        starting_scores = scoring_function.score_list(starting_population)
+        population_smiles = [x for _, x in sorted(zip(
+            starting_scores, starting_population), key=lambda pair: pair[0], reverse=True)]
+
         population_mol = [Chem.MolFromSmiles(s) for s in population_smiles]
-        population_scores = self.pool(delayed(score_mol)(m, scoring_function.score) for m in population_mol)
+
+        # this is slow. Don't know exactly why. maybe pickling classifiers is not too nice
+        # population_scores_old = self.pool(delayed(score_mol)(m, scoring_function.score) for m in population_mol)
+        population_scores = scoring_function.score_list(
+            mols2smiles(population_mol))
 
         # evolution: go go go!!
         t0 = time()
 
         patience = 0
 
-        for generation in range(self.generations):
+        population_history = []
+        population_history.append([Chem.MolToSmiles(m)
+                                   for m in population_mol])
 
+        for generation in range(self.generations):
             # new_population
-            mating_pool = make_mating_pool(population_mol, population_scores, self.offspring_size)
-            offspring_mol = self.pool(delayed(reproduce)(mating_pool, self.mutation_rate) for _ in range(self.population_size))
+            mating_pool = make_mating_pool(
+                population_mol, population_scores, self.offspring_size)
+            offspring_mol = self.pool(delayed(reproduce)(
+                mating_pool, self.mutation_rate) for _ in range(self.population_size))
 
             # add new_population
             population_mol += offspring_mol
@@ -144,9 +169,12 @@ class GB_GA_Generator(GoalDirectedGenerator):
             t0 = time()
 
             old_scores = population_scores
-            population_scores = self.pool(delayed(score_mol)(m, scoring_function.score) for m in population_mol)
+            # population_scores = self.pool(delayed(score_mol)(m, scoring_function.score) for m in population_mol)
+            population_scores = scoring_function.score_list(
+                [Chem.MolToSmiles(m) for m in population_mol])
             population_tuples = list(zip(population_scores, population_mol))
-            population_tuples = sorted(population_tuples, key=lambda x: x[0], reverse=True)[:self.population_size]
+            population_tuples = sorted(population_tuples, key=lambda x: x[0], reverse=True)[
+                :self.population_size]
             population_mol = [t[1] for t in population_tuples]
             population_scores = [t[0] for t in population_tuples]
 
@@ -160,6 +188,8 @@ class GB_GA_Generator(GoalDirectedGenerator):
             else:
                 patience = 0
 
+            res_time = time() - t0
+
             print(f'{generation} | '
                   f'max: {np.max(population_scores):.3f} | '
                   f'avg: {np.mean(population_scores):.3f} | '
@@ -167,10 +197,17 @@ class GB_GA_Generator(GoalDirectedGenerator):
                   f'std: {np.std(population_scores):.3f} | '
                   f'sum: {np.sum(population_scores):.3f} | '
                   f'{gen_time:.2f} sec/gen | '
-                  f'{mol_sec:.2f} mol/sec')
+                  f'{mol_sec:.2f} mol/sec | '
+                  f'{res_time:.2f} rest ')
+
+            population_history.append([Chem.MolToSmiles(m)
+                                       for m in population_mol])
 
         # finally
-        return [Chem.MolToSmiles(m) for m in population_mol][:number_molecules]
+        if get_history:
+            return population_history
+        else:
+            return [Chem.MolToSmiles(m) for m in population_mol][:number_molecules]
 
 
 def main():

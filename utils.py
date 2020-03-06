@@ -37,11 +37,13 @@ def score(smiles_list, clf):
     preds_valid = clf.predict_proba(np.array(X_valid))[:,1]
     preds =  []
     i = 0
-    for x in X:
+    for li, x in enumerate(X):
         if x is None:
+            # print(smiles_list[li], Chem.MolFromSmiles(smiles_list[li]), x)
             preds.append(None)
         else:
             preds.append(preds_valid[i])
+            assert preds_valid[i] is not None
             i+=1
     return preds
 

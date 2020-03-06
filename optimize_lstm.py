@@ -12,11 +12,17 @@ from rdkit.Chem import AllChem
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
+from guacamol_baselines.smiles_lstm_hc.smiles_rnn_directed_generator import SmilesRnnDirectedGenerator
+
 from guacamol_baselines.graph_ga.goal_directed_generation import GB_GA_Generator
 from utils import TPScoringFunction, calc_auc, ecfp, score
 
 def timestamp():
     return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+
+def can_list(smiles):
+    ms = [Chem.MolFromSmiles(s) for s in smiles]
+    return [Chem.MolToSmiles(m) for m in ms if m is not None]
 
 def fit_clfs(chid, n_estimators, n_jobs):
     """
@@ -74,13 +80,12 @@ def optimize(chid,
     np.random.seed(seed)
 
     #set up logging
-    results_dir = os.path.join('./results', 'graph_ga', chid, timestamp())
+    results_dir = os.path.join('./results', 'lstm_hc', chid, timestamp())
     os.makedirs(results_dir)
 
     config_file = os.path.join(results_dir, 'config.json')
     with open(config_file, 'w') as f:
         json.dump(config, f)
-
 
 
     clfs, aucs, balance = fit_clfs(chid, n_estimators, n_jobs)
@@ -97,12 +102,18 @@ def optimize(chid,
 
     # run optimization
     t0 = time()
-    optimizer = GB_GA_Generator(**optimizer_args)
-    smiles_history = optimizer.generate_optimized_molecules(
-        scoring_function, 100, get_history=True)
+    optimizer = SmilesRnnDirectedGenerator(**optimizer_args)
+    _, smiles_history = optimizer.generate_optimized_molecules(scoring_function, 100, get_history=True)
+
+
+    smiles_history = [can_list(e) for e in smiles_history]
+
+    # min_length = min(len(e) for e in smiles_history)
+    # smiles_history = [e[:min_length] for e in smiles_history]
 
     t1 = time()
     opt_time = t1 - t0
+
 
     # make a list of dictionaries for every time step
     statistics = []
@@ -110,10 +121,10 @@ def optimize(chid,
         row = {}
         row['smiles'] = optimized_smiles
         row['preds'] = {}
-        row['ratio_active'] = {}
-        row['mean_pred'] = {}
         for k, clf in clfs.items():
             preds = score(optimized_smiles, clf)
+            if None in preds:
+                print('Invalid score. Debug message')
             row['preds'][k] = preds
         statistics.append(row)
 
@@ -144,14 +155,18 @@ if __name__ == '__main__':
         external_file='./data/guacamol_v1_test.smiles.can',
         n_external=3000,
         seed=101,
-        optimizer_args=dict(smi_file='./data/guacamol_v1_valid.smiles.can',
-                            population_size=100,
-                            offspring_size=200,
-                            generations=5,
-                            mutation_rate=0.01,
-                            n_jobs=-1,
-                            random_start=True,
-                            patience=150,
-                            canonicalize=False))
+        optimizer_args = dict(pretrained_model_path = './guacamol_baselines/smiles_lstm_hc/pretrained_model/model_final_0.473.pt',
+                        n_epochs = 3,
+                        mols_to_sample = 1028,
+                        keep_top = 512,
+                        optimize_n_epochs = 1,
+                        max_len = 100,
+                        optimize_batch_size = 64,
+                        number_final_samples = 1028,
+                        sample_final_model_only = False,
+                        random_start = True,
+                        smi_file = './data/guacamol_v1_train.smiles.can',
+                        n_jobs = -1,
+                        canonicalize=False))
 
     optimize(**config)

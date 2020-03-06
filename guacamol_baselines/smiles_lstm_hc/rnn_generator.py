@@ -71,6 +71,7 @@ class SmilesRnnMoleculeGenerator:
                 optimize_n_epochs: number of episodes to finetune
                 optimize_batch_size: batch size for fine-tuning
                 pretrain_n_epochs: number of epochs to pretrain on start population
+        :param get_history: If true also return intermediate samples as well
         :return: Candidate molecules
         """
 
@@ -85,6 +86,7 @@ class SmilesRnnMoleculeGenerator:
                 results.append(k)
                 seen.add(k.smiles)
 
+        smiles_history = []
         for epoch in range(1, 1 + n_epochs):
 
             t0 = time.time()
@@ -92,6 +94,7 @@ class SmilesRnnMoleculeGenerator:
             t1 = time.time()
 
             canonicalized_samples = set(canonicalize_list(samples, include_stereocenters=True))
+            smiles_history.append(list(canonicalized_samples))
             payload = list(canonicalized_samples.difference(seen))
             payload.sort()  # necessary for reproducibility between different runs
 
@@ -136,9 +139,11 @@ class SmilesRnnMoleculeGenerator:
                         f'finetune: {(t3 - t2):.3f} s')
 
             top4 = '\n'.join(f'\t{result.score:.3f}: {result.smiles}' for result in results[:4])
-            logger.info(f'Top 4:\n{top4}')
 
-        return sorted(results, reverse=True)
+            logger.info(f'Top 4:\n{top4}')
+            print(f'Top 4:\n{top4}')
+
+        return sorted(results, reverse=True), smiles_history
 
     def sample(self, num_mols) -> List[str]:
         """

@@ -6,11 +6,11 @@ data/
 results/
 old_stuff/
 assays/
-test/
+test*/
 guacamol_baselines_modified
 figures/
 *.swp
-
+20*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

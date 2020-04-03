@@ -92,4 +92,4 @@ class SmilesRnnDirectedGenerator(GoalDirectedGenerator):
 
         top_scored_molecules = sorted_scored_molecules[:number_molecules]
 
-        return [x[0] for x in top_scored_molecules], smiles_history
+        return smiles_history

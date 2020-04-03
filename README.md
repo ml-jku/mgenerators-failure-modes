@@ -19,4 +19,4 @@ MCS is conflicting with maximum common substructure though -> CSM
 # Refactoring
 - Changed results -> results/goal_directed
 - distribution_results -> results/distribution
--
+- trainset_predictions -> results/predictions

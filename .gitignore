@@ -8,7 +8,7 @@ old_stuff/
 assays/
 test/
 guacamol_baselines_modified
-
+figures/
 *.swp
 
 # Byte-compiled / optimized / DLL files

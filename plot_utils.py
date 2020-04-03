@@ -1,10 +1,13 @@
 import json
 import os
 from collections import defaultdict
+from functools import lru_cache
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
+
 
 def npflatten(dicts):
     "Takes a list of dictionaries with same keys and joins them up into numpy array. Similar to pandas but also works with higher dim arrays"
@@ -33,6 +36,7 @@ def flatten(dicts):
 
     return flat
 
+@lru_cache(maxsize=64)
 def load_chid(chid_dir, order, hack=True):
     runs = [run for run in os.listdir(chid_dir) if (run != 'summary') and os.path.isfile(chid_dir/run/'results.json')]
     accumulate = []
@@ -52,13 +56,13 @@ def load_chid(chid_dir, order, hack=True):
 
         # create a dictionary containing arrays of shape [n_iter, n_molecules]
         preds_internal = flatten([row['preds'] for row in results['statistics']])
+        smiles = [row['smiles'] for row in results['statistics']]
         # array for each clf and split
         preds_external = results['predictions_external']
-
-        accumulate.append((preds_internal, preds_external, results['AUC']))
+        accumulate.append((preds_internal, preds_external, results['AUC'], smiles))
 
     # preds_internal, preds_external, aucs = [flatten(x) for x in list(zip(*accumulate))]
-    preds_internal, preds_external, aucs = list(zip(*accumulate))
+    preds_internal, preds_external, aucs, smiles = list(zip(*accumulate))
     preds_internal = flatten(preds_internal)
     preds_external = flatten(preds_external)
     aucs = flatten(aucs)
@@ -67,7 +71,7 @@ def load_chid(chid_dir, order, hack=True):
         if 'all' in d:
             del d['all']
     preds_internal, preds_external, aucs = [{k: d[k] for k in order} for d in [preds_internal, preds_external, aucs]]
-    return preds_internal, preds_external, aucs
+    return preds_internal, preds_external, aucs, smiles
 
 
 def median_score_single(pred, color=None, label=None, **kwargs):
@@ -127,12 +131,11 @@ def ratio_active_compound(pred, color=None, label=None, **kwargs):
         np.arange(median.shape[0]), q25, q75, alpha=.1, color=color)
 
 
-def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, legend_dict, skip=False, ax=None, legend=True, leg_lw=3, **kwargs):
+def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, legend_dict, skip=[], ax=None, legend=True, leg_lw=3, **kwargs):
     if ax is not None:
         plt.sca(ax)
-
     for k, pred in preds_internal.items():
-        if skip and k == 'Split1_alt':
+        if k in skip:
             continue
         primitive(pred, color=col_dict[k], label=legend_dict[k], **kwargs)
 
@@ -144,5 +147,3 @@ def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, lege
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
-
-

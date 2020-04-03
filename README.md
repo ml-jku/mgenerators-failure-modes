@@ -4,16 +4,19 @@ Some papers introduced molecule generators that create molecules based on the pr
 
 Here we show that this might go wrong.
 
-## Genetic Algorithm can exploit classifiers
+# TODOs:
+- Add figures jpg
 
-We show that some models can exploit classifiers
-Some more experiments we could do include:
+Think about switching to models with higher predictive performance
 
-Possible causes include
-- Features: maybe ECFPs are not well suited here, try MACCS
-- Classifier: maybe RFs are easy to trick
-- To little data: maybe models trained on little data are bad
-- Optimizer is bad: maybe other optimizers would do better
+# New names
+- Split 1, model 1 -> Optimization score (OS)
+- Split 1, model 2 -> Model control score (MCS)
+- Split 2 -> Data control score (DCS)
 
-I think that this list is sorted by importance in ascending order.
-It will be interesting to find out if this is really the case.
+MCS is conflicting with maximum common substructure though -> CSM
+
+# Refactoring
+- Changed results -> results/goal_directed
+- distribution_results -> results/distribution
+-

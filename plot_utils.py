@@ -7,8 +7,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
-
-
+import pandas as pd
+import seaborn as sns
+import scipy.stats as st
 def npflatten(dicts):
     "Takes a list of dictionaries with same keys and joins them up into numpy array. Similar to pandas but also works with higher dim arrays"
     flat = defaultdict(list)
@@ -36,21 +37,33 @@ def flatten(dicts):
 
     return flat
 
+def get_splits(run_dir):
+    df1 = pd.read_csv(run_dir/'split1.csv', index_col=False)
+    df1['Split'] = 0
+    df2 = pd.read_csv(run_dir/'split2.csv', index_col=False)
+    df2['Split'] = 1
+    df = pd.concat([df1, df2])
+    df.index = np.arange(len(df))
+    return df
+
 @lru_cache(maxsize=64)
 def load_chid(chid_dir, order, hack=True):
     runs = [run for run in os.listdir(chid_dir) if (run != 'summary') and os.path.isfile(chid_dir/run/'results.json')]
     accumulate = []
     for run in runs:
         run_dir = chid_dir/run
+        split_info = get_splits(run_dir)
         with open(run_dir/'results.json', 'r') as f:
             results = json.load(f)
 
         # some runs aborted earlier. Hack this away by adding the last entry a few times!
         n_gen = len(results['statistics'])
 
-        # TODO: solve this in a better way. It feels so wrong ;)
+        # TODO: solve this in a better way.
+
         if hack:
             if n_gen != 151:
+                print('DEBUG: ', n_gen)
                 results['statistics'] += [results['statistics'][-1]] * \
                     (151 - n_gen)
 
@@ -59,10 +72,10 @@ def load_chid(chid_dir, order, hack=True):
         smiles = [row['smiles'] for row in results['statistics']]
         # array for each clf and split
         preds_external = results['predictions_external']
-        accumulate.append((preds_internal, preds_external, results['AUC'], smiles))
+        accumulate.append((preds_internal, preds_external, results['AUC'], smiles, split_info))
 
     # preds_internal, preds_external, aucs = [flatten(x) for x in list(zip(*accumulate))]
-    preds_internal, preds_external, aucs, smiles = list(zip(*accumulate))
+    preds_internal, preds_external, aucs, smiles, split_info = list(zip(*accumulate))
     preds_internal = flatten(preds_internal)
     preds_external = flatten(preds_external)
     aucs = flatten(aucs)
@@ -71,7 +84,7 @@ def load_chid(chid_dir, order, hack=True):
         if 'all' in d:
             del d['all']
     preds_internal, preds_external, aucs = [{k: d[k] for k in order} for d in [preds_internal, preds_external, aucs]]
-    return preds_internal, preds_external, aucs, smiles
+    return preds_internal, preds_external, aucs, smiles, split_info
 
 
 def median_score_single(pred, color=None, label=None, **kwargs):
@@ -116,8 +129,6 @@ def median_score_compound(pred, color=None, label=None, shade=False, **kwargs):
 
 
 
-
-
 def ratio_active_compound(pred, color=None, label=None, **kwargs):
     """Computes ratio active for each run. Then plots median and quartiles"""
 
@@ -131,13 +142,13 @@ def ratio_active_compound(pred, color=None, label=None, **kwargs):
         np.arange(median.shape[0]), q25, q75, alpha=.1, color=color)
 
 
-def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, legend_dict, skip=[], ax=None, legend=True, leg_lw=3, **kwargs):
+def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, legend_dict, ls_dict, skip=[], ax=None, legend=True, leg_lw=3, **kwargs):
     if ax is not None:
         plt.sca(ax)
     for k, pred in preds_internal.items():
         if k in skip:
             continue
-        primitive(pred, color=col_dict[k], label=legend_dict[k], **kwargs)
+        primitive(pred, color=col_dict[k], label=legend_dict[k], ls=ls_dict[k], **kwargs)
 
     if legend:
         leg = plt.legend(loc='upper center', bbox_to_anchor=(
@@ -147,3 +158,26 @@ def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, lege
 
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
+
+# RF gives predictions that are on the grid of np.linspace(0,1,n_trees+1). Shake this up a little
+def jitter(a, scale=1):
+    a = np.array(a)
+    return a + np.random.normal(loc=0, scale=scale, size=a.shape)
+
+
+def countour(p11s, p21s, y1s, ax, levels=3, scatter=False):
+    idx = np.array(y1s, bool)
+    x = p11s[idx]
+    y = p21s[idx]
+    xx, yy = np.mgrid[0:1:100j, 0:1:100j]
+    positions = np.vstack([xx.ravel(), yy.ravel()])
+    values = np.vstack([x, y])
+    kernel = st.gaussian_kde(values)
+    f = np.reshape(kernel(positions).T, xx.shape)
+    xmin, xmax = 0, 1
+    ymin, ymax = 0, 1
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    cset = ax.contour(xx, yy, f, colors='black', levels=levels, alpha=0.5)
+    if scatter:
+        ax.scatter(x,y, s=1)

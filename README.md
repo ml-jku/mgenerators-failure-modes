@@ -20,3 +20,10 @@ MCS is conflicting with maximum common substructure though -> CSM
 - Changed results -> results/goal_directed
 - distribution_results -> results/distribution
 - trainset_predictions -> results/predictions
+
+
+Steps to reproduce the paper:
+- run_goal_directed.py
+- calculate trainset predictions
+- summary plots
+- nearest neighbours

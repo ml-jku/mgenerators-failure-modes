@@ -11,12 +11,12 @@ opt_args['graph_ga'] = dict(
     mutation_rate=0.01,
     n_jobs=-1,
     random_start=True,
-    patience=5,
+    patience=150,
     canonicalize=False)
 
 opt_args['lstm_hc'] = dict(
     pretrained_model_path = './guacamol_baselines/smiles_lstm_hc/pretrained_model/model_final_0.473.pt',
-    n_epochs = 150,
+    n_epochs = 151,
     mols_to_sample = 1028,
     keep_top = 512,
     optimize_n_epochs = 1,
@@ -39,7 +39,7 @@ base_config = dict(
     seed=None,
     opt_name=None,
     optimizer_args=None,
-    log_base='results/goal_directed_new')
+    log_base='results/goal_directed_v3')
 
 n_runs = 10
 for opt_name, optimizer_args in opt_args.items():

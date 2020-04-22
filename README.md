@@ -14,5 +14,6 @@ There has been a wave of generative models for molecules triggered by ad-vances 
 ## Code..
 ..is being refactored and cleaned up and will come soon.
 
-## 
+## Teaser
+.. when optimizing molecules guided by a machine learning model the optimizer exploits biases in the model
 ![Scores](https://raw.githubusercontent.com/ml-jku/mgenerators-failure-modes/master/controlscores.png)

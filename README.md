@@ -15,4 +15,4 @@ There has been a wave of generative models for molecules triggered by ad-vances 
 ..is being refactored and cleaned up and will come soon.
 
 ## 
-!(Scores)[https://raw.githubusercontent.com/ml-jku/mgenerators-failure-modes/master/controlscores.png]
+![Scores](https://raw.githubusercontent.com/ml-jku/mgenerators-failure-modes/master/controlscores.png)

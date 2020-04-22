@@ -5,8 +5,7 @@ Jörg Kurt Wegner  <sup>b</sup>,
 Sepp Hochreiter  <sup>a</sup>, 
 Günter Klambauer  <sup>a</sup>, 
 
-<sup>a</sup> LIT AI Lab & Institute for Machine Learning, Johannes Kepler University Linz, Altenberger Strasse 69, A-4040 Linz, Austria
-
+<sup>a</sup> LIT AI Lab & Institute for Machine Learning, Johannes Kepler University Linz, Altenberger Strasse 69, A-4040 Linz, Austria  
 <sup>b</sup> High Dimensional Biology and Discovery Data Sciences, Janssen Research & Development, Janssen Pharmaceutica N.V., Turnhoutseweg 30, Beerse B-2340, Belgium
 
 ## Abstract

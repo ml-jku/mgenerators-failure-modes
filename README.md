@@ -10,7 +10,17 @@ Günter Klambauer  <sup>a</sup>,
 <sup>b</sup> High Dimensional Biology and Discovery Data Sciences, Janssen Research & Development, Janssen Pharmaceutica N.V., Turnhoutseweg 30, Beerse B-2340, Belgium
 
 ## Abstract
-There has been a wave of generative models for molecules triggered by ad-vances in the field of Deep Learning.  These generative models are often usedto optimize chemical compounds towards particular properties or a desiredbiological activity.  The evaluation of generative models remains challengingand suggested performance metrics or scoring functions often do not coverall relevant aspects of drug design projects.  In this work, we highlight someunintended failure modes of generative models and how these evade detectionby current performance metrics.
+There has been a wave of generative models for molecules triggered 
+by advances in the field of Deep Learning.
+These generative models are often used to optimize chemical 
+compounds towards particular properties or a desired 
+biological activity. The evaluation of 
+generative models remains challenging and 
+suggested performance metrics or scoring functions 
+often do not cover all relevant aspects of drug design projects. 
+In this work, we highlight some unintended failure modes of 
+generative models and how these evade 
+detection by current performance metrics.
 
 ## Code..
 ..is being refactored and cleaned up and will come soon.

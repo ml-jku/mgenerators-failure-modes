@@ -23,7 +23,8 @@ MCS is conflicting with maximum common substructure though -> CSM
 
 
 Steps to reproduce the paper:
+- addcarbon.py
 - run_goal_directed.py
 - calculate trainset predictions
 - summary plots
-- nearest neighbours# mgenerators-failure-modes
+- nearest neighbours

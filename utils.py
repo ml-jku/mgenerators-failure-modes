@@ -6,12 +6,18 @@ from functools import partial
 from sklearn.metrics import roc_auc_score
 from guacamol.scoring_function import BatchScoringFunction
 
+from time import gmtime, strftime
+
+
+def timestamp():
+    return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+
 
 def one_ecfp(smile, radius=2):
     "Calculate ECFP fingerprint. If smiles is invalid return none"
     try:
         m = Chem.MolFromSmiles(smile)
-        fp = np.array(AllChem.GetMorganFingerprintAsBitVect(m,radius,nBits=1024))
+        fp = np.array(AllChem.GetMorganFingerprintAsBitVect(m, radius, nBits=1024))
         return fp
     except:
         return None
@@ -22,8 +28,9 @@ def ecfp(smiles, radius=2, n_jobs=12):
         X = pool.map(partial(one_ecfp, radius=radius), smiles)
     return X
 
+
 def calc_auc(clf, X_test, y_test):
-    preds = clf.predict_proba(X_test)[:,1]
+    preds = clf.predict_proba(X_test)[:, 1]
     return roc_auc_score(y_test, preds)
 
 
@@ -34,8 +41,8 @@ def score(smiles_list, clf):
     if len(X_valid) == 0:
         return X
 
-    preds_valid = clf.predict_proba(np.array(X_valid))[:,1]
-    preds =  []
+    preds_valid = clf.predict_proba(np.array(X_valid))[:, 1]
+    preds = []
     i = 0
     for li, x in enumerate(X):
         if x is None:
@@ -44,7 +51,7 @@ def score(smiles_list, clf):
         else:
             preds.append(preds_valid[i])
             assert preds_valid[i] is not None
-            i+=1
+            i += 1
     return preds
 
 

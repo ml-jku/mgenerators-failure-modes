@@ -4,7 +4,7 @@ from optimize import optimize
 
 opt_args = {}
 opt_args['graph_ga'] = dict(
-    smi_file='./data/guacamol_v1_train.smiles.can',
+    smi_file='./data/guacamol_v1_train.smiles',
     population_size=100,
     offspring_size=200,
     generations=150,
@@ -25,7 +25,7 @@ opt_args['lstm_hc'] = dict(
     number_final_samples = 1028,
     sample_final_model_only = False,
     random_start = True,
-    smi_file = './data/guacamol_v1_train.smiles.can',
+    smi_file = './data/guacamol_v1_train.smiles',
     n_jobs = -1,
     canonicalize=False)
 
@@ -34,7 +34,7 @@ base_config = dict(
     chid=None,
     n_estimators=100,
     n_jobs=8,
-    external_file='./data/guacamol_v1_test.smiles.can',
+    external_file='./data/guacamol_v1_test.smiles',
     n_external=3000,
     seed=None,
     opt_name=None,

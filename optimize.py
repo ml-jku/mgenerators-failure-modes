@@ -171,7 +171,7 @@ if __name__ == '__main__':
     # some default settings for both optimizers
     opt_args = {}
     opt_args['graph_ga'] = dict(
-        smi_file='./data/guacamol_v1_valid.smiles.can',
+        smi_file='./data/guacamol_v1_valid.smiles',
         population_size=100,
         offspring_size=200,
         generations=5,
@@ -192,7 +192,7 @@ if __name__ == '__main__':
         number_final_samples=1028,
         sample_final_model_only=False,
         random_start=True,
-        smi_file='./data/guacamol_v1_train.smiles.can',
+        smi_file='./data/guacamol_v1_train.smiles',
         n_jobs=-1,
         canonicalize=False)
 
@@ -205,7 +205,7 @@ if __name__ == '__main__':
         chid='CHEMBL3888429',
         n_estimators=100,
         n_jobs=8,
-        external_file='./data/guacamol_v1_test.smiles.can',
+        external_file='./data/guacamol_v1_test.smiles',
         n_external=3000,
         seed=101,
         opt_name=opt_name,

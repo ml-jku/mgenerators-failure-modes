@@ -1,23 +1,33 @@
-from rdkit.Chem import AllChem
-from rdkit import Chem
-from multiprocessing import Pool
-import numpy as np
+import uuid
 from functools import partial
-from sklearn.metrics import roc_auc_score
-from guacamol.scoring_function import BatchScoringFunction
-
+from multiprocessing import Pool
 from time import gmtime, strftime
 
+import numpy as np
+from guacamol.scoring_function import BatchScoringFunction
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from sklearn.metrics import roc_auc_score
 
-def timestamp():
-    return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+
+def timestamp(adduuid=False):
+    s = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+    if adduuid:
+        s = s + '_' + uuid.uuid4().hex
+    return s
+
+
+def can_list(smiles):
+    ms = [Chem.MolFromSmiles(s) for s in smiles]
+    return [Chem.MolToSmiles(m) for m in ms if m is not None]
 
 
 def one_ecfp(smile, radius=2):
     "Calculate ECFP fingerprint. If smiles is invalid return none"
     try:
         m = Chem.MolFromSmiles(smile)
-        fp = np.array(AllChem.GetMorganFingerprintAsBitVect(m, radius, nBits=1024))
+        fp = np.array(AllChem.GetMorganFingerprintAsBitVect(
+            m, radius, nBits=1024))
         return fp
     except:
         return None

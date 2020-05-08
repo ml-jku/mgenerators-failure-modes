@@ -14,7 +14,7 @@ from rdkit import Chem
 from utils import timestamp
 
 # from guacamol_baselines.random_smiles_sampler.distribution_learning import \
-    # RandomSmilesSampler
+# RandomSmilesSampler
 
 
 class AddCarbonSampler(DistributionMatchingGenerator):
@@ -74,6 +74,34 @@ class AddCarbonSampler(DistributionMatchingGenerator):
         return list(generated_smiles)
 
 
+def run_addcarbon(smi_train, results_base, seed=None):
+    if seed is not None:
+        np.random.seed(seed)
+    # setup results directory
+    dir_results = Path(f'{results_base}/{timestamp()}')
+    os.makedirs(dir_results)
+
+    np.random.seed(seed)
+    add_carbon = AddCarbonSampler(smi_train)
+
+    sampled_smiles = add_carbon.generate(10000)
+    fn_sampled = str(dir_results / 'addcarbon_smiles.txt')
+    with open(fn_sampled, 'w') as f:
+        f.write('\n'.join(sampled_smiles))
+
+    fn_guacamol_results = str(dir_results / 'guacamol_results.json')
+    assess_distribution_learning(
+        add_carbon, smi_train, json_output_file=fn_guacamol_results)
+
+    with open(fn_guacamol_results) as f:
+        results = json.load(f)
+
+    for b in results['results']:
+        print(f"{b['benchmark_name']}: {b['score']}")
+
+    print(f'Saved results in: {dir_results}')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -86,27 +114,12 @@ if __name__ == "__main__":
         type=str,
         default='./results/addcarbon',
         help="Directory where to put results")
+    parser.add_argument(
+        "--nruns",
+        type=int,
+        default=1,
+        help="Random seed to use. Default is None")
     args = parser.parse_args()
 
-    # setup results directory
-    dir_results = Path(f'{args.results_base}/{timestamp()}')
-    os.makedirs(dir_results)
-
-    add_carbon = AddCarbonSampler(args.smi_train)
-
-    sampled_smiles = add_carbon.generate(10000)
-    fn_sampled = str(dir_results / 'addcarbon_smiles.txt')
-    with open(fn_sampled, 'w') as f:
-        f.write('\n'.join(sampled_smiles))
-
-    fn_guacamol_results = str(dir_results / 'guacamol_results.json')
-    assess_distribution_learning(
-        add_carbon, args.smi_train, json_output_file=fn_guacamol_results)
-
-    with open(fn_guacamol_results) as f:
-        results = json.load(f)
-
-    for b in results['results']:
-        print(f"{b['benchmark_name']}: {b['score']}")
-
-    print(f'Saved results in: {dir_results}')
+    for i in range(args.nruns):
+        run_addcarbon(args.smi_train, args.results_base, seed=i)

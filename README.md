@@ -15,6 +15,11 @@ Feel free to send questions to renz@ml.jku.at.
 
 ## Code
 Steps to reproduce the paper:
+### Install dependencies
+```
+pip install -r requirements.txt
+conda install rdkit -c rdkit
+```
 
 ### Download Guacamol data splits
 The compounds are used for distribution learning and for starting populations for the graph-based genetic algorithm.

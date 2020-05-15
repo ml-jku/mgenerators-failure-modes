@@ -1,34 +1,32 @@
 import json
 import os
 import pickle
-from multiprocessing import Pool
-from pathlib import Path
-from time import gmtime, strftime, time
+from time import time
 
 import numpy as np
 import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import AllChem
+import torch
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-import torch
 
-from guacamol_baselines.smiles_lstm_hc.smiles_rnn_directed_generator import SmilesRnnDirectedGenerator
-from guacamol_baselines.graph_ga.goal_directed_generation import GB_GA_Generator
-from utils import TPScoringFunction, calc_auc, ecfp, score
+from guacamol_baselines.graph_ga.goal_directed_generation import \
+    GB_GA_Generator
+from guacamol_baselines.smiles_lstm_hc.smiles_rnn_directed_generator import \
+    SmilesRnnDirectedGenerator
+from utils import TPScoringFunction, calc_auc, can_list, ecfp, score, timestamp
 
-def timestamp():
-    return strftime("%Y-%m-%d_%H:%M:%S", gmtime())
-
-def can_list(smiles):
-    ms = [Chem.MolFromSmiles(s) for s in smiles]
-    return [Chem.MolToSmiles(m) for m in ms if m is not None]
 
 def fit_clfs(chid, n_estimators, n_jobs):
     """
     Args:
         chid: which assay to use:
         external_file:
+    Returns:
+        clfs: Dictionary of fitted classifiers
+        aucs: Dictionary of AUCs
+        balance: Two numbers showing the number of actives in split 1 / split 2
+        df1: data in split 1
+        df2: data in split 2
     """
     # read data and calculate ecfp fingerprints
     assay_file = f'./assays/processed/{chid}.csv'
@@ -84,7 +82,18 @@ def optimize(chid,
              opt_name,
              optimizer_args,
              log_base):
-
+    """
+    Args:
+        - chid: which assay to use
+        - n_estimators: how many trees to use in Random Forest
+        - n_jobs: how many parallel processes to use
+        - external_file: Smiles that are not used for optimization
+        - n_external: on how many such independent random points to calculate scores
+        - seed: which random seed to use
+        - opt_name: which optimizer to use (graph_ga or lstm_hc)
+        - optimizer_args: dictionary with arguments for the optimizer
+        - log_base: Where to store results. Will be appended by timestamp
+    """
     config = locals()
 
     # Results might not be fully reproducible when using pytorch
@@ -92,14 +101,13 @@ def optimize(chid,
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    #set up logging
+    # set up logging
     results_dir = os.path.join(log_base, opt_name, chid, timestamp())
     os.makedirs(results_dir)
 
     config_file = os.path.join(results_dir, 'config.json')
     with open(config_file, 'w') as f:
         json.dump(config, f)
-
 
     clfs, aucs, balance, df1, df2 = fit_clfs(chid, n_estimators, n_jobs)
     results = {}
@@ -128,13 +136,13 @@ def optimize(chid,
     smiles_history = optimizer.generate_optimized_molecules(
         scoring_function, 100, get_history=True)
 
-
     smiles_history = [can_list(e) for e in smiles_history]
 
     t1 = time()
     opt_time = t1 - t0
 
     # make a list of dictionaries for every time step
+    # this is far from an optimal data structure
     statistics = []
     for optimized_smiles in smiles_history:
         row = {}
@@ -166,12 +174,11 @@ def optimize(chid,
     print(f'Statistics time {stat_time:.2f}')
 
 
-
 if __name__ == '__main__':
     # some default settings for both optimizers
     opt_args = {}
     opt_args['graph_ga'] = dict(
-        smi_file='./data/guacamol_v1_valid.smiles.can',
+        smi_file='./data/guacamol_v1_valid.smiles',
         population_size=100,
         offspring_size=200,
         generations=5,
@@ -192,7 +199,7 @@ if __name__ == '__main__':
         number_final_samples=1028,
         sample_final_model_only=False,
         random_start=True,
-        smi_file='./data/guacamol_v1_train.smiles.can',
+        smi_file='./data/guacamol_v1_train.smiles',
         n_jobs=-1,
         canonicalize=False)
 
@@ -205,7 +212,7 @@ if __name__ == '__main__':
         chid='CHEMBL3888429',
         n_estimators=100,
         n_jobs=8,
-        external_file='./data/guacamol_v1_test.smiles.can',
+        external_file='./data/guacamol_v1_test.smiles',
         n_external=3000,
         seed=101,
         opt_name=opt_name,

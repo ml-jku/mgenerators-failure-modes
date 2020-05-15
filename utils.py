@@ -1,17 +1,33 @@
-from rdkit.Chem import AllChem
-from rdkit import Chem
-from multiprocessing import Pool
-import numpy as np
+import uuid
 from functools import partial
-from sklearn.metrics import roc_auc_score
+from multiprocessing import Pool
+from time import gmtime, strftime
+
+import numpy as np
 from guacamol.scoring_function import BatchScoringFunction
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from sklearn.metrics import roc_auc_score
+
+
+def timestamp(adduuid=False):
+    s = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+    if adduuid:
+        s = s + '_' + uuid.uuid4().hex
+    return s
+
+
+def can_list(smiles):
+    ms = [Chem.MolFromSmiles(s) for s in smiles]
+    return [Chem.MolToSmiles(m) for m in ms if m is not None]
 
 
 def one_ecfp(smile, radius=2):
     "Calculate ECFP fingerprint. If smiles is invalid return none"
     try:
         m = Chem.MolFromSmiles(smile)
-        fp = np.array(AllChem.GetMorganFingerprintAsBitVect(m,radius,nBits=1024))
+        fp = np.array(AllChem.GetMorganFingerprintAsBitVect(
+            m, radius, nBits=1024))
         return fp
     except:
         return None
@@ -22,8 +38,9 @@ def ecfp(smiles, radius=2, n_jobs=12):
         X = pool.map(partial(one_ecfp, radius=radius), smiles)
     return X
 
+
 def calc_auc(clf, X_test, y_test):
-    preds = clf.predict_proba(X_test)[:,1]
+    preds = clf.predict_proba(X_test)[:, 1]
     return roc_auc_score(y_test, preds)
 
 
@@ -34,8 +51,8 @@ def score(smiles_list, clf):
     if len(X_valid) == 0:
         return X
 
-    preds_valid = clf.predict_proba(np.array(X_valid))[:,1]
-    preds =  []
+    preds_valid = clf.predict_proba(np.array(X_valid))[:, 1]
+    preds = []
     i = 0
     for li, x in enumerate(X):
         if x is None:
@@ -44,7 +61,7 @@ def score(smiles_list, clf):
         else:
             preds.append(preds_valid[i])
             assert preds_valid[i] is not None
-            i+=1
+            i += 1
     return preds
 
 

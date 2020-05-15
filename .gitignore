@@ -5,8 +5,8 @@
 data/
 results/
 old_stuff/
-assays/
 test*/
+run_goal_directed_additional.py
 guacamol_baselines_modified
 figures/
 *.swp

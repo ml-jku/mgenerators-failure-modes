@@ -6,7 +6,7 @@ Sepp Hochreiter  <sup>a</sup>,
 Günter Klambauer  <sup>a</sup>,
 
 <sup>a</sup> LIT AI Lab & Institute for Machine Learning, Johannes Kepler University Linz,Altenberger Strasse 69, A-4040 Linz, Austria
-<sup>b</sup> High Dimensional Biology and Discovery Data Sciences, Janssen Research &Development, Janssen Pharmaceutica N.V., Turnhoutseweg 30, Beerse B-2340, Belgium
+<sup>b</sup> High Dimensional Biology and Discovery Data Sciences, Janssen Research & Development, Janssen Pharmaceutica N.V., Turnhoutseweg 30, Beerse B-2340, Belgium
 
 The paper can be found here:
 https://chemrxiv.org/articles/On_Failure_Modes_of_Molecule_Generators_and_Optimizers/12213542

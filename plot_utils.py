@@ -31,8 +31,7 @@ def get_splits(run_dir):
 
 @lru_cache(maxsize=64)
 def load_chid(chid_dir, order, **kwargs):
-    runs = [run for run in os.listdir(chid_dir) if (
-        run != 'summary') and os.path.isfile(chid_dir / run / 'results.json')]
+    runs = [run for run in os.listdir(chid_dir) if os.path.isfile(chid_dir / run / 'results.json')]
     accumulate = []
     for run in runs:
         run_dir = chid_dir / run
@@ -101,7 +100,7 @@ def median_score_compound(pred, color=None, label=None, shade=False, **kwargs):
         np.arange(median.shape[0]), q25, q75, alpha=.1, color=color)
 
 
-def plot_wrapper(preds_internal, primitive, name, xlabel, ylabel, col_dict, legend_dict, ls_dict, skip=[], ax=None, legend=True, leg_lw=3, **kwargs):
+def plot_wrapper(preds_internal, primitive, name, col_dict, legend_dict, ls_dict, skip=[], xlabel=None, ylabel=None, ax=None, legend=True, leg_lw=3, **kwargs):
     if ax is not None:
         plt.sca(ax)
     for k, pred in preds_internal.items():

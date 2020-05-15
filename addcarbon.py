@@ -118,7 +118,7 @@ if __name__ == "__main__":
         "--nruns",
         type=int,
         default=1,
-        help="Random seed to use. Default is None")
+        help="How many runs to perform.")
     args = parser.parse_args()
 
     for i in range(args.nruns):

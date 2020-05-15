@@ -39,17 +39,19 @@ base_config = dict(
     seed=None,
     opt_name=None,
     optimizer_args=None,
-    log_base='results/goal_directed_v3')
+    log_base='results/goal_directed_paper')
 
 n_runs = 10
-for opt_name, optimizer_args in opt_args.items():
-    for chid in ['CHEMBL1909203', 'CHEMBL1909140', 'CHEMBL3888429']:
-        for i in range(0, n_runs):
-            config = deepcopy(base_config)
-            config['chid'] = chid
-            config['seed'] = i
-            config['opt_name'] = opt_name
-            config['optimizer_args'] = optimizer_args
 
-            print(f'Run {i+1}/{n_runs}, {opt_name}, {chid}')
-            optimize(**config)
+if __name__ == '__main__':
+    for opt_name, optimizer_args in opt_args.items():
+        for chid in ['CHEMBL1909203', 'CHEMBL1909140', 'CHEMBL3888429']:
+            for i in range(0, n_runs):
+                config = deepcopy(base_config)
+                config['chid'] = chid
+                config['seed'] = i
+                config['opt_name'] = opt_name
+                config['optimizer_args'] = optimizer_args
+
+                print(f'Run {i+1}/{n_runs}, {opt_name}, {chid}')
+                optimize(**config)

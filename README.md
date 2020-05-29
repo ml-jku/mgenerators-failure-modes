@@ -45,4 +45,4 @@ For the goal-directed generation benchmarks more steps have to be taken.
 1. `nearest_neighbours.ipynb`: Notebook to calculate nearest neighbour distances and to create Fig. S4 (histograms over Tanimoto similarities)
 
 ## Special thanks
-Special thanks goes out to the authors of [Guacamol](https://pubs.acs.org/doi/10.1021/acs.jcim.8b00839) ([Github](https://github.com/BenevolentAI/guacamol)). Their code was very helpful in implementing our experiments.
+Special thanks goes out to the authors of Guacamol ([Paper](https://pubs.acs.org/doi/10.1021/acs.jcim.8b00839) / [Github](https://github.com/BenevolentAI/guacamol)). Their code was very helpful in implementing our experiments.

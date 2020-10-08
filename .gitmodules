@@ -1,0 +1,3 @@
+[submodule "mso"]
+	path = mso
+	url = https://github.com/renzph/mso

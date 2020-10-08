@@ -88,7 +88,7 @@ def median_score_compound(pred, color=None, label=None, shade=False, **kwargs):
     # pred is triply nested list [n_runs, n_epochs, n_mol(variable_size) ]
 
     # get mean scores over runs
-    pred_mean = np.array([[np.mean(y) for y in x] for x in pred]).T
+    pred_mean = np.array([[np.mean([z for z in y if z is not None]) for y in x] for x in pred]).T
 
     median = np.median(pred_mean, 1)
     q25 = np.percentile(pred_mean, 25, axis=1)

@@ -1,11 +1,18 @@
 import json
 import os
 import pickle
+import sys
 from time import time
+
+mso_dir = os.path.join(os.path.dirname(__file__), 'mso')
+sys.path.append(mso_dir)
 
 import numpy as np
 import pandas as pd
 import torch
+from cddd.inference import InferenceModel
+from mso.objectives.scoring import ScoringFunction
+from mso.optimizer import BasePSOptimizer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 
@@ -124,17 +131,55 @@ def optimize(chid,
     # Create guacamol scoring function with clf trained on split 1
     scoring_function = TPScoringFunction(clfs['Split1'])
 
+
+    infer_model = InferenceModel(model_dir='default_model') # The CDDD inference model used to encode/decode molecular SMILES strings to/from the CDDD space. You might need to specify the path to the pretrained model (e.g. default_model)
+
+
+
+    mso_score = [ScoringFunction(func=scoring_function.raw_score_list, name='score', is_mol_func=False, is_smiles_func=True)]
+
+    # from mso.objectives.mol_functions import qed_score
+    # mso_score = [ScoringFunction(func=qed_score,            name="qed", is_mol_func=True)] # wrap the drug likeness score inside a scoring function instance
+
+    class MsoWrapper(object):
+        def __init__(self, smi_file, num_part, num_iter):
+            self.smi_file = smi_file
+            self.num_part = num_part
+            self.num_iter = num_iter
+            with open(self.smi_file) as f:
+                self.start_pool = f.read().split()
+
+        def run(self):
+            init_smiles = list(np.random.choice(self.start_pool, self.num_part))
+
+            print(type(init_smiles))
+
+            opt = BasePSOptimizer.from_query(
+                init_smiles=init_smiles,
+                num_part=200,
+                num_swarms=1,
+                inference_model=infer_model,
+                scoring_functions=mso_score)
+
+            _, smiles_history = opt.run(self.num_iter)
+            return smiles_history
+
     # run optimization
     t0 = time()
     if opt_name == 'graph_ga':
         optimizer = GB_GA_Generator(**optimizer_args)
     elif opt_name == 'lstm_hc':
         optimizer = SmilesRnnDirectedGenerator(**optimizer_args)
+    elif opt_name == 'mso':
+        optimizer = MsoWrapper(**optimizer_args)
     else:
         raise ValueError(f'Invalid optimizer: {opt_name}')
 
-    smiles_history = optimizer.generate_optimized_molecules(
-        scoring_function, 100, get_history=True)
+    if opt_name == 'mso':
+        smiles_history = optimizer.run()
+    else:
+        smiles_history = optimizer.generate_optimized_molecules(
+            scoring_function, 100, get_history=True)
 
     smiles_history = [can_list(e) for e in smiles_history]
 
@@ -176,6 +221,7 @@ def optimize(chid,
 
 if __name__ == '__main__':
     # some default settings for both optimizers
+
     opt_args = {}
     opt_args['graph_ga'] = dict(
         smi_file='./data/guacamol_v1_valid.smiles',
@@ -203,9 +249,15 @@ if __name__ == '__main__':
         n_jobs=-1,
         canonicalize=False)
 
+    opt_args['mso'] = dict(
+        smi_file='./data/guacamol_v1_valid.smiles',
+        num_part=200,
+        num_iter=150)
+
     # which optimizer to use
     # opt_name = 'graph_ga'
-    opt_name = 'lstm_hc'
+    # opt_name = 'lstm_hc'
+    opt_name = 'mso'
     optimizer_args = opt_args[opt_name]
 
     config = dict(

@@ -6,6 +6,7 @@ data/
 results/
 old_stuff/
 test*/
+default_model/
 run_goal_directed_additional.py
 guacamol_baselines_modified
 figures/

@@ -68,7 +68,6 @@ if __name__ == "__main__":
         help="How many runs to perform. For small datasets more runs will give better plots in the end.")
     args = parser.parse_args()
 
-    chids = os.listdir(os.path.join(args.dir_results, 'graph_ga'))
 
     trainset_predictions = {}
     for chid in chids:

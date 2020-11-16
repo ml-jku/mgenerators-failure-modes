@@ -9,7 +9,7 @@ Günter Klambauer  <sup>a</sup>,
 <sup>b</sup> High Dimensional Biology and Discovery Data Sciences, Janssen Research & Development, Janssen Pharmaceutica N.V., Turnhoutseweg 30, Beerse B-2340, Belgium
 
 The paper can be found here:
-https://chemrxiv.org/articles/On_Failure_Modes_of_Molecule_Generators_and_Optimizers/12213542
+https://www.sciencedirect.com/science/article/pii/S1740674920300159
 
 Feel free to send questions to renz@ml.jku.at.
 ## TLDR:

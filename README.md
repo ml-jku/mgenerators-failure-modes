@@ -15,8 +15,7 @@ Feel free to send questions to renz@ml.jku.at.
 ## TLDR:
 The main points of the paper are:
 - By just making tiny changes to training set molecules we get high
-  scores on the [Guacamol benchmark](https://pubs.acs.org/doi/10.1021/
-  acs.jcim.8b00839) and beat all models except an LSTM. This relies on
+  scores on the [Guacamol benchmark](https://pubs.acs.org/doi/10.1021/acs.jcim.8b00839) and beat all models except an LSTM. This relies on
   the fact that the novelty metric is rather permissive.
 - Molecular optimizers are often used to find samples that scored highly
   by machine learning models. We show that these high scores can overfit
